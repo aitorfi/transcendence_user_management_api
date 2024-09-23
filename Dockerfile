@@ -15,3 +15,4 @@ RUN pip install django psycopg2
 EXPOSE 8080
 
 CMD [ "/usr/bin/runserver.sh" ]
+
