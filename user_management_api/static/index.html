@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruebas App</title>
+    <style>
+        .hidden { display: none; }
+        .prueba { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+        form { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Pruebas</h1>
+    <div>
+        <button id="btn-list">Listar Pruebas</button>
+        <button id="btn-create">Crear Prueba</button>
+    </div>
+    <div id="form-container" class="hidden">
+        <h2>Crear/Editar Prueba</h2>
+        <form id="prueba-form">
+            <input type="hidden" id="prueba-id">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="url" id="avatar" placeholder="Avatar URL">
+            <select id="status">
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="in_game">In Game</option>
+                <option value="busy">Busy</option>
+            </select>
+            <input type="checkbox" id="two_factor_auth">
+            <label for="two_factor_auth">Two Factor Auth</label>
+            <input type="text" id="session_42" placeholder="Session 42">
+            <button type="submit">Guardar</button>
+        </form>
+    </div>
+    <div id="content-container"></div>
+
+    <script>
+        const contentContainer = document.getElementById('content-container');
+        const formContainer = document.getElementById('form-container');
+        const pruebaForm = document.getElementById('prueba-form');
+        const btnList = document.getElementById('btn-list');
+        const btnCreate = document.getElementById('btn-create');
+
+        function fetchPruebas() {
+            fetch('/api/pruebas/')
+                .then(response => response.json())
+                .then(data => {
+                    contentContainer.innerHTML = '';
+                    data.forEach(prueba => {
+                        contentContainer.innerHTML += `
+                            <div class="prueba" data-id="${prueba.id}">
+                                <h2>${prueba.username}</h2>
+                                <p>Email: ${prueba.email}</p>
+                                <p>Status: ${prueba.status}</p>
+                                <p>Created: ${prueba.created_at}</p>
+                                <p>Updated: ${prueba.updated_at}</p>
+                                <button class="btn-edit">Editar</button>
+                                <button class="btn-delete">Eliminar</button>
+                            </div>
+                        `;
+                    });
+                    addPruebaListeners();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    contentContainer.innerHTML = 'Error al cargar las pruebas.';
+                });
+        }
+
+        function getPruebaDetail(id) {
+            fetch(`/api/pruebas/${id}/`)
+                .then(response => response.json())
+                .then(prueba => {
+                    document.getElementById('prueba-id').value = prueba.id;
+                    document.getElementById('username').value = prueba.username;
+                    document.getElementById('email').value = prueba.email;
+                    document.getElementById('password').value = '';
+                    document.getElementById('avatar').value = prueba.avatar || '';
+                    document.getElementById('status').value = prueba.status;
+                    document.getElementById('two_factor_auth').checked = prueba.two_factor_auth;
+                    document.getElementById('session_42').value = prueba.session_42 || '';
+                    formContainer.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar los detalles de la prueba.');
+                });
+        }
+
+        function createOrUpdatePrueba(event) {
+            event.preventDefault();
+            const id = document.getElementById('prueba-id').value;
+            const url = id ? `/api/pruebas/${id}/update/` : '/api/pruebas/create/';
+            const method = id ? 'PUT' : 'POST';
+
+            const formData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                avatar: document.getElementById('avatar').value,
+                status: document.getElementById('status').value,
+                two_factor_auth: document.getElementById('two_factor_auth').checked,
+                session_42: document.getElementById('session_42').value
+            };
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(id ? 'Prueba actualizada con éxito' : 'Prueba creada con éxito');
+                fetchPruebas();
+                formContainer.classList.add('hidden');
+                pruebaForm.reset();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Error al guardar la prueba');
+            });
+        }
+
+        function deletePrueba(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta prueba?')) {
+                fetch(`/api/pruebas/${id}/delete/`, {
+                    method: 'DELETE',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Prueba eliminada con éxito');
+                        fetchPruebas();
+                    } else {
+                        throw new Error('Error al eliminar la prueba');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar la prueba');
+                });
+            }
+        }
+
+        function addPruebaListeners() {
+            document.querySelectorAll('.btn-edit').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.closest('.prueba').dataset.id;
+                    getPruebaDetail(id);
+                });
+            });
+
+            document.querySelectorAll('.btn-delete').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.target.closest('.prueba').dataset.id;
+                    deletePrueba(id);
+                });
+            });
+        }
+
+        btnList.addEventListener('click', () => {
+            fetchPruebas();
+            formContainer.classList.add('hidden');
+        });
+
+        btnCreate.addEventListener('click', () => {
+            pruebaForm.reset();
+            document.getElementById('prueba-id').value = '';
+            formContainer.classList.remove('hidden');
+        });
+
+        pruebaForm.addEventListener('submit', createOrUpdatePrueba);
+
+        // Cargar pruebas inicialmente
+        fetchPruebas();
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estamos en IA</title>
+</head>
+<body>
+    <h1>Pruebas</h1>
+    <div id="pruebas-container"></div>
+
+    <script>
+        fetch('../api/pruebas/')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('pruebas-container');
+                data.forEach(prueba => {
+                    container.innerHTML += `
+                        <div class="prueba">
+                            <h2>${prueba.username}</h2>
+                            <p>Email: ${prueba.email}</p>
+                            <p>Status: ${prueba.status}</p>
+                        </div>
+                    `;
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('pruebas-container').innerHTML = 'Error al cargar los datos.';
+            });
+    </script>
+</body>
+</html>
