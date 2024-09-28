@@ -28,6 +28,22 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
+OAUTH42_CLIENT_ID = 'tu_client_uid'
+OAUTH42_CLIENT_SECRET = 'tu_client_secret'
+OAUTH42_REDIRECT_URI = 'http://localhost:5500/oauth/callback'
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+]
 
 # Application definition
 
@@ -39,9 +55,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 	'rest_framework',
+    'rest_framework_simplejwt',    
     'corsheaders',
     'rest_framework.authtoken',
-	'api'
+	'api',
+  #  'django_otp',
+  #  'django_otp.plugins.otp_totp',
+  #  'two_factor',
 ]
 
 MIDDLEWARE = [
@@ -49,23 +69,38 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+#    'django_otp.middleware.OTPMiddleware',
 ]
 
+""" REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+ """
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5501",
-    "http://localhost:5501",
-]
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
+
+
+
 
 ROOT_URLCONF = 'user_management_api.urls'
 

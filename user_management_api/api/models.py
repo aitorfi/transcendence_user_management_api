@@ -2,8 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User as DjangoUser
 
 
-
-# Create your models here.
 class User(models.Model):
     age = models.IntegerField()
     avatar = models.CharField(max_length=50, blank=True, null=True)
@@ -15,7 +13,6 @@ class User(models.Model):
     ], default='offline') 
     two_factor_auth = models.BooleanField(default=False)  # BOOLEAN para la autenticación de dos factores
     session_42 = models.TextField(blank=True, null=True)  # TEXT, para la ID de sesión de 42, puede ser nulo o estar en blanco
-
 
     def __str__(self):
         return self.name

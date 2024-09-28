@@ -1,0 +1,26 @@
+• Web (1.5 puntos)
+    ◦ Major module: Use a Framework as backend. -> auskola, Iker y Alejandro
+    ◦ Minor module: Use a front-end framework or toolkit. -> Iker y Alejandro
+    ◦ Minor module: Use a database for the backend. -> auskola
+
+• AI-Algo (1 punto)
+◦   Major module: Introduce an AI Opponent. -> Goiko
+
+• User Management ( 2 puntos)
+    ◦ Major module: Standard user management, authentication, users across tournaments. -> Iker y Alejandro
+    ◦ Major module: Implementing a remote authentication. oauth 2 (login 42) -> auskola
+
+ft_transcendence Surprise. ( 1 punto)
+    ◦ Minor module: Expanding Browser Compatibility. -> Iker y Alejandro
+    ◦ Minor module: Multiple language supports. -> Goiko 
+
+• Cybersecurity (1 punto)
+    ◦ Major module: Implement Two-Factor Authentication (2FA) and JWT. -> auskola
+
+Gameplay and user experience (2 puntos)
+    ◦ Major module: Add Another Game with User History and Matchmaking. -> Goiko, Iker y Alejandro
+    ◦ Major module: Remote players -> Afidalgo
+
+• Devops (1 punto) 
+    ◦ Major module: Designing the Backend as Microservices. -> Afidalgo
+
