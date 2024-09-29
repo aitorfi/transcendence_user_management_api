@@ -11,7 +11,7 @@ COPY ./runserver.sh /usr/bin/
 # Install project dependencies
 RUN pip install django djangorestframework
 RUN pip install django psycopg2
-RUN python -m pip install django-cors-headers
+RUN pip install django-cors-headers
 
 EXPOSE 8080
 
