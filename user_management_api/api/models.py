@@ -1,65 +1,30 @@
 from django.db import models
-from django.contrib.auth.models import User as DjangoUser
 
-
-
-# Create your models here.
 class User(models.Model):
-    age = models.IntegerField()
-    avatar = models.CharField(max_length=50, blank=True, null=True)
+    id = models.AutoField(primary_key=True)  # SERIAL en PostgreSQL se mapea a AutoField en Django
+    email = models.EmailField(max_length=100, unique=True)  # VARCHAR(100), campo único
+    password = models.TextField()  # TEXT para la contraseña cifrada
+    username = models.CharField(max_length=50, unique=True)  # VARCHAR(50), campo único
+    avatar = models.URLField(max_length=200, blank=True, null=True)
     status = models.CharField(max_length=20, choices=[
         ('online', 'Online'),
         ('offline', 'Offline'),
         ('in_game', 'In Game'),
         ('busy', 'Busy')
-    ], default='offline') 
+    ], default='offline')  # VARCHAR(20), con opciones
+    created_at = models.DateTimeField(auto_now_add=True)  # TIMESTAMP, se establece automáticamente al crear el registro
+    updated_at = models.DateTimeField(auto_now=True)  # TIMESTAMP, se actualiza automáticamente en cada modificación
     two_factor_auth = models.BooleanField(default=False)  # BOOLEAN para la autenticación de dos factores
     session_42 = models.TextField(blank=True, null=True)  # TEXT, para la ID de sesión de 42, puede ser nulo o estar en blanco
 
 
     def __str__(self):
-        return self.name
+        return self.username  # Esto es lo que se devolverá cuando conviertas el objeto en una cadena (por ejemplo, en el admin)
 
-    def get_full_user_data(self):
-        return {
-            'id': self.id,
-            'age': self.age,
-            'avatar': self.avatar,
-            'status': self.status,
-            'two_factor_auth': self.two_factor_auth,
-            'session_42': self.session_42
-        }
+    class Meta:
+        db_table = 'users'  # Opcional: especifica el nombre de la tabla en la base de datos
 
-class ApiUser(models.Model):
-    user = models.OneToOneField(
-        DjangoUser,
-        on_delete=models.CASCADE,
-        primary_key=True,
-    )
-    age = models.IntegerField(null=True, blank=True)
-    avatar = models.CharField(max_length=50, blank=True, null=True)
-    status = models.CharField(max_length=20, choices=[
-        ('online', 'Online'),
-        ('offline', 'Offline'),
-        ('in_game', 'In Game'),
-        ('busy', 'Busy')
-    ], default='offline')
-    two_factor_auth = models.BooleanField(default=False)
-    session_42 = models.TextField(blank=True, null=True)
+    
 
-    def get_full_user_data(self):
-        return {
-            'id': self.user.id,
-            'username': self.user.username,
-            'email': self.user.email,
-            'first_name': self.user.first_name,
-            'last_name': self.user.last_name,
-            'age': self.age,
-            'avatar': self.avatar,
-            'status': self.status,
-            'two_factor_auth': self.two_factor_auth,
-            'session_42': self.session_42
-        }
 
-    def __str__(self):
-        return self.user.username
+
