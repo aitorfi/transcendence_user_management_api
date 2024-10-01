@@ -23,13 +23,15 @@ create_user() {
              \"two_factor_auth\": $9,
              \"session_42\": \"${10}\",
              \"friends\": \"${11}\",
-             \"friends_wait\": \"${12}\"
+             \"friends_wait\": \"${12}\",
+             \"friends_request\": \"${13}\"
+             
          }"
     echo ""
 }
 
 # Crear usuarios
-create_user "aitor" "aitor@gmail.com" "aitor" "Aitor" "Completo" 28 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "2-3" "0"
-create_user "iker" "iker@gmail.com" "iker" "Iker" "Completo" 29 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "1-3" "0"
-create_user "alejandro" "alejandro@gmail.com" "alejandro" "Alejandro" "Completo" 30 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "1-2" "0"
-create_user "goiko" "goiko@gmail.com" "goiko" "Goiko" "Completo" 31 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "2-3" "0"
+create_user "aitor" "aitor@gmail.com" "aitor" "Aitor" "Completo" 28 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "2,3" "0" "0"
+create_user "iker" "iker@gmail.com" "iker" "Iker" "Completo" 29 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "1,3" "0" "0"
+create_user "alejandro" "alejandro@gmail.com" "alejandro" "Alejandro" "Completo" 30 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "1,2" "0" "0"
+create_user "goiko" "goiko@gmail.com" "goiko" "Goiko" "Completo" 31 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "2,3" "0" "0"pw

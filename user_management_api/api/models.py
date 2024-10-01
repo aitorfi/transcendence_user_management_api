@@ -15,6 +15,7 @@ class User(models.Model):
     ], default='offline') 
     friends = models.CharField(max_length=200, blank=True, null=True)
     friends_wait = models.CharField(max_length=200, blank=True, null=True)
+    friends_request = models.CharField(max_length=200, blank=True, null=True)
     two_factor_auth = models.BooleanField(default=False)  # BOOLEAN para la autenticación de dos factores
     session_42 = models.TextField(blank=True, null=True)  # TEXT, para la ID de sesión de 42, puede ser nulo o estar en blanco
 
@@ -30,6 +31,7 @@ class User(models.Model):
             'status': self.status,
             'friends': self.friends,
             'friends_wait': self.friends_wait,
+            'friends_request': self.friends_request,
             'two_factor_auth': self.two_factor_auth,
             'session_42': self.session_42
         }
@@ -50,6 +52,7 @@ class ApiUser(models.Model):
     ], default='offline')
     friends = models.CharField(max_length=200, blank=True, null=True)
     friends_wait = models.CharField(max_length=200, blank=True, null=True) 
+    friends_request = models.CharField(max_length=200, blank=True, null=True) 
     two_factor_auth = models.BooleanField(default=False)
     session_42 = models.TextField(blank=True, null=True)
 
@@ -64,6 +67,7 @@ class ApiUser(models.Model):
             'avatar': self.avatar,
             'friends': self.friends,
             'friends_wait': self.friends_wait,
+            'friends_request': self.friends_wait,
             'status': self.status,
             'two_factor_auth': self.two_factor_auth,
             'session_42': self.session_42,
