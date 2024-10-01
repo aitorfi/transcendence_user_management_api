@@ -1,5 +1,11 @@
 from django.urls import path
-from .views import get_users, create_user, get_user, login_user, get_user_profile, sign_out_user
+from .views import (
+    get_users, create_user, get_user,
+    login_user, get_user_profile,
+    sign_out_user, get_friends,
+    update_user_profile,
+    change_password
+)  
 
 
 urlpatterns = [
@@ -9,6 +15,9 @@ urlpatterns = [
     path('users/login/', login_user, name='login'),
     path('users/signout/', sign_out_user, name='signout'),
     path("users/profile/<int:pk>/", get_user_profile, name="get_user_profile"),
+    path("friends/", get_friends, name="get_friends"),
+    path("users/update/<int:pk>/", update_user_profile, name="update_user_profile"),
+    path("users/change-password/<int:pk>/", change_password, name="change_password"),
 
 ]
 

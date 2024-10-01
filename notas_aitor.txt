@@ -1,0 +1,6 @@
+si docker empieza a estar tonto.
+    sudo systemctl restart docker
+
+Para meter info de arranque
+    bash comandos_arranque.sh
+

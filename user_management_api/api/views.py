@@ -11,6 +11,90 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_friends(request, pk):
+    print(f"Attempting to fetch friends for user ID: {pk}")
+    try:
+        django_user = DjangoUser.objects.get(id=pk)
+        api_user = ApiUser.objects.get(user=django_user)
+        
+        # Obtener el valor del campo 'friends'
+        friends = api_user.friends
+        
+        # Si friends es una cadena vacía, devolvemos una lista vacía
+        if not friends:
+            return Response({"friends": []})
+        
+        # Si friends es una cadena, la dividimos en una lista
+        # Asumiendo que los amigos están separados por comas
+        friends_list = [friend.strip() for friend in friends.split(',') if friend.strip()]
+        
+        return Response({"friends": friends_list})
+    except DjangoUser.DoesNotExist:
+        print(f"No User found for ID: {pk}")
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    except ApiUser.DoesNotExist:
+        print(f"No ApiUser found for User ID: {pk}")
+        return Response({"error": "ApiUser not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def change_password(request, pk):
+    user = request.user
+    
+    if user.id != pk:
+        return Response({"error": "You don't have permission to change this user's password"}, 
+                        status=status.HTTP_403_FORBIDDEN)
+
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+
+    if not current_password or not new_password:
+        return Response({"error": "Both current and new password are required"}, 
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    # Verificar la contraseña actual
+    if not authenticate(username=user.username, password=current_password):
+        return Response({"error": "Current password is incorrect"}, 
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    # Cambiar la contraseña
+    user.set_password(new_password)
+    user.save()
+
+    return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+
+@api_view(['PUT'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_user_profile(request, pk):
+    try:
+        django_user = DjangoUser.objects.get(id=pk)
+        api_user = ApiUser.objects.get(user=django_user)
+    except (DjangoUser.DoesNotExist, ApiUser.DoesNotExist):
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Actualizar los campos del usuario Django
+    django_user.first_name = request.data.get('first_name', django_user.first_name)
+    django_user.last_name = request.data.get('last_name', django_user.last_name)
+    django_user.save()
+
+    # Actualizar los campos del ApiUser
+    api_user.friends = request.data.get('friends', api_user.friends)
+    api_user.save()
+
+    # Devolver los datos actualizados
+    return Response(api_user.get_full_user_data(), status=status.HTTP_200_OK)
+
+
+
+
+
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
@@ -27,7 +111,11 @@ def get_user_profile(request, pk):
     except DjangoUser.DoesNotExist:
         print(f"No User found for ID: {pk}")
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-    
+
+
+
+
+
 
 @api_view(['POST'])
 def login_user(request):
