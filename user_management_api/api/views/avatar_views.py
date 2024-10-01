@@ -2,49 +2,49 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User as DjangoUser
-from ..models import User
-from ..serializer import UserSerializer
-from ..models import ApiUser
-from ..serializer import ApiUserSerializer
+from ..models import User, ApiUser
+from ..serializer import UserSerializer, ApiUserSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.conf import settings
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_default_avatar(request):
     default_path = os.path.join(settings.MEDIA_ROOT, 'default.jpg')
+    logger.info(f"Attempting to serve default avatar from: {default_path}")
     if os.path.exists(default_path):
         return FileResponse(open(default_path, 'rb'), content_type="image/jpeg")
     else:
+        logger.error(f"Default avatar not found at: {default_path}")
         return HttpResponse("Default avatar not found", status=404)
 
+@api_view(['GET'])
 def get_avatar(request, user_id):
+    logger.info(f"Attempting to get avatar for user {user_id}")
     try:
         api_user = ApiUser.objects.get(user__id=user_id)
         if api_user.avatar_image:
             file_path = api_user.avatar_image.path
+            logger.info(f"Avatar path for user {user_id}: {file_path}")
             if os.path.exists(file_path):
                 return FileResponse(open(file_path, 'rb'), content_type="image/jpeg")
             else:
-                print(f"Avatar file not found: {file_path}")
+                logger.warning(f"Avatar file not found: {file_path}")
         else:
-            print(f"No avatar_image for user: {user_id}")
+            logger.warning(f"No avatar_image for user: {user_id}")
     except ApiUser.DoesNotExist:
-        print(f"ApiUser not found for user_id: {user_id}")
+        logger.warning(f"ApiUser not found for user_id: {user_id}")
     except Exception as e:
-        print(f"Error retrieving avatar: {str(e)}")
+        logger.error(f"Error retrieving avatar: {str(e)}")
     
     # Si no se encuentra la imagen o el usuario, devolver una imagen por defecto
-    default_path = os.path.join(settings.MEDIA_ROOT, 'default.jpg')
-    if os.path.exists(default_path):
-        return FileResponse(open(default_path, 'rb'), content_type="image/jpeg")
-    else:
-        print(f"Default avatar not found at: {default_path}")
-        return HttpResponse("Default avatar not found", status=404)
-
+    return get_default_avatar(request)
 
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
@@ -55,23 +55,22 @@ def upload_avatar(request):
     
     file = request.FILES['avatar_image']
     user = request.user
-    api_user = ApiUser.objects.get(user=user)
-    
-    # Guardar la imagen
-    api_user.avatar_image.save(f'img{user.id}.jpg', file, save=True)
-    
-    return Response({'message': 'Avatar uploaded successfully'}, status=status.HTTP_200_OK)
-""" 
-def get_avatar(request, user_id):
     try:
-        api_user = ApiUser.objects.get(user__id=user_id)
-        if api_user.avatar_image:
-            return HttpResponse(api_user.avatar_image, content_type="image/jpeg")
+        api_user = ApiUser.objects.get(user=user)
+        
+        # Guardar la imagen
+        file_name = f'avatar_{user.id}.{file.name.split(".")[-1]}'
+        api_user.avatar_image.save(file_name, file, save=True)
+        
+        logger.info(f"Avatar saved for user {user.id} at: {api_user.avatar_image.path}")
+        
+        return Response({
+            'message': 'Avatar uploaded successfully',
+            'path': api_user.avatar_image.url
+        }, status=status.HTTP_200_OK)
     except ApiUser.DoesNotExist:
-        pass
-    
-    # Si no se encuentra la imagen o el usuario, devolver una imagen por defecto
-    with open(os.path.join(settings.MEDIA_ROOT, 'default_avatar.jpg'), 'rb') as f:
-        return HttpResponse(f.read(), content_type="image/jpeg")
-
- """
+        logger.error(f"ApiUser not found for user: {user.id}")
+        return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error uploading avatar for user {user.id}: {str(e)}")
+        return Response({'error': f'An error occurred while uploading the avatar: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
