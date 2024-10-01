@@ -20,10 +20,8 @@ def get_friends(request, pk):
         django_user = DjangoUser.objects.get(id=pk)
         api_user = ApiUser.objects.get(user=django_user)
         
-        # Obtener el valor del campo 'friends'
         friends = api_user.friends
         
-        # Si friends es una cadena vacía, devolvemos una lista vacía
         if not friends:
             return Response({"friends": []})
         
