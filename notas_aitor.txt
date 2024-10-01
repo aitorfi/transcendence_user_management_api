@@ -28,3 +28,6 @@ si ya te vas a cambiar de ordenador.
     docker rmi $(docker images -q)
     docker network prune -f
 
+me mato
+    docker compose down --orphan --remove
+    docker network prune -a -f
