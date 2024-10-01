@@ -17,12 +17,7 @@ create_user() {
              \"password\": \"$3\",
              \"first_name\": \"$4\",
              \"last_name\": \"$5\",
-             \"age\": $6,
-             \"avatar\": \"$7\",
-             \"status\": \"$8\",
-             \"two_factor_auth\": $9,
-             \"session_42\": \"${10}\",
-             \"friends\": \"${11}\",
+            \"friends\": \"${11}\",
              \"friends_wait\": \"${12}\",
              \"friends_request\": \"${13}\"
              
