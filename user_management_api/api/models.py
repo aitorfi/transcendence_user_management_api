@@ -44,6 +44,8 @@ class ApiUser(models.Model):
     )
     age = models.IntegerField(null=True, blank=True)
     avatar = models.CharField(max_length=50, blank=True, null=True)
+    avatar_image = models.ImageField(upload_to='avatars/', null=True, blank=True, default='default.jpg')
+
     status = models.CharField(max_length=20, choices=[
         ('online', 'Online'),
         ('offline', 'Offline'),
