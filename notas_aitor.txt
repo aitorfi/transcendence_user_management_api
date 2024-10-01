@@ -4,3 +4,27 @@ si docker empieza a estar tonto.
 Para meter info de arranque
     bash comandos_arranque.sh
 
+si se atasca el docker
+
+    docker compose down
+    
+    docker stop postgres
+    docker rmi -f postgres
+    docker rm postgres
+    docker stop user_management_api
+    docker rmi -f user_management_api
+    docker rm user_management_api
+
+si la red no arranca.
+    docker network prune
+    docker compose down
+
+si todo esta perdido.
+    docker compose build
+
+si ya te vas a cambiar de ordenador.
+    docker stop $(docker ps -aq)
+    docker rm $(docker ps -aq)
+    docker rmi $(docker images -q)
+    docker network prune -f
+

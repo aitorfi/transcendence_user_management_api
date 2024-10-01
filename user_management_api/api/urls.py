@@ -4,7 +4,8 @@ from .views import (
     login_user, get_user_profile,
     sign_out_user, get_friends,
     update_user_profile,
-    change_password
+    change_password, upload_avatar,  
+    get_avatar , get_default_avatar
 )  
 
 
@@ -18,6 +19,10 @@ urlpatterns = [
     path("friends/", get_friends, name="get_friends"),
     path("users/update/<int:pk>/", update_user_profile, name="update_user_profile"),
     path("users/change-password/<int:pk>/", change_password, name="change_password"),
+    path('users/upload-avatar/', upload_avatar, name='upload_avatar'),
+    path('users/avatar/<int:user_id>/', get_avatar, name='get_avatar'),
+    path('default-avatar/', get_default_avatar, name='get_default_avatar'),
+
 
 ]
 

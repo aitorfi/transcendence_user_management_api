@@ -12,6 +12,7 @@ COPY ./runserver.sh /usr/bin/
 RUN pip install django djangorestframework
 RUN pip install django psycopg2
 RUN pip install django-cors-headers
+RUN pip install Pillow
 
 EXPOSE 8080
 
