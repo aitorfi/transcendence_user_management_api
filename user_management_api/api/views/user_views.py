@@ -16,6 +16,33 @@ from django.contrib.auth.decorators import login_required
 import os
 
 
+def logout(request):
+    # Revoca el token de 42
+    token = request.auth.key
+    response = requests.post('https://api.intra.42.fr/oauth/token/info', headers={
+        'Authorization': f'Bearer {token}'
+    })
+    
+    if response.status_code == 200:
+        # El token es válido, procede a revocarlo
+        revoke_response = requests.post('https://api.intra.42.fr/oauth/token/revoke', data={
+            'client_id': settings.FORTYTWO_CLIENT_ID,
+            'client_secret': settings.FORTYTWO_CLIENT_SECRET,
+            'token': token
+        })
+        
+        if revoke_response.status_code == 200:
+            # Token revocado exitosamente
+            # Aquí puedes eliminar el token de tu base de datos si lo almacenas
+            request.auth.delete()
+            return Response({"message": "Logged out successfully"})
+        else:
+            return Response({"error": "Failed to revoke token"}, status=400)
+    else:
+        # El token ya no es válido, simplemente elimínalo de tu sistema
+        request.auth.delete()
+        return Response({"message": "Logged out successfully"})
+
 @login_required
 def check_auth(request):
     return JsonResponse({
@@ -36,19 +63,6 @@ def home(request):
         return HttpResponse(f"Bienvenido, {request.user.username}! <a href='/oauth/logout/'>Cerrar sesión</a> | <a href='/protected/'>Vista protegida</a>")
     else:
         return HttpResponse("Bienvenido, visitante! <a href='/oauth/login/'>Iniciar sesión con 42</a>")
-def get_auth_url(request):
-    auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
-    return JsonResponse({"auth_url": auth_url})
-
-def oauth_login(request):
-    auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
-    return redirect(auth_url)
-
-def home(request):
-    if request.user.is_authenticated:
-        return HttpResponse(f"Bienvenido, {request.user.username}! <a href='/api/oauth/logout/'>Cerrar sesión</a> | <a href='/api/protected/'>Vista protegida</a>")
-    else:
-        return HttpResponse("Bienvenido, visitante! <a href='/api/oauth/login/'>Iniciar sesión con 42</a>")
 
 def get_auth_url(request):
     auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
@@ -57,14 +71,14 @@ def get_auth_url(request):
 def oauth_login(request):
     auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
     return redirect(auth_url)
-    
+
 
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def change_password(request, pk):
     user = request.user
-    
+
     if user.id != pk:
         return Response({"error": "You don't have permission to change this user's password"}, 
                         status=status.HTTP_403_FORBIDDEN)
@@ -131,10 +145,6 @@ def get_user_profile(request, pk):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-@login_required
-def protected_view(request):
-    return HttpResponse("Esta es una vista protegida. Solo usuarios autenticados pueden verla.")
-
 
 
 @api_view(['POST'])
@@ -152,21 +162,6 @@ def login_user(request):
         })
     return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
-
-""" @api_view(['GET'])
-def get_users(request):
-	user = User.objects.all()
-	serializer = UserSerializer(user, many = True)
-	return Response(serializer.data)
-
-@api_view(['POST'])
-def create_user(request):
-	serializer = UserSerializer(data = request.data)
-	if serializer.is_valid():
-		serializer.save()
-		return Response(serializer.data, status = status.HTTP_201_CREATED)
-	return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
- """
 
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
@@ -221,27 +216,3 @@ def create_user(request):
         return Response(api_user.get_full_user_data(), status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-""" 
-@api_view(['PUT'])
-def update_user(request, pk):
-    try:
-        user = ApiUser.objects.get(pk=pk)
-    except ApiUser.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    serializer = ApiUserSerializer(user, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['DELETE'])
-def delete_user(request, pk):
-    try:
-        user = ApiUser.objects.get(pk=pk)
-    except ApiUser.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    user.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT) 
-"""

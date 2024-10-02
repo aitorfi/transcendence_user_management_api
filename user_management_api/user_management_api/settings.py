@@ -88,6 +88,11 @@ MIDDLEWARE = [
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
 ]
 
+OAUTH2_PROVIDER = {
+    'SCOPES': {'read': 'Read scope', 'write': 'Write scope'},
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 36000,
+    'REFRESH_TOKEN_EXPIRE_SECONDS': 36000,
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

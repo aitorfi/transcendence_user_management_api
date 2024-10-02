@@ -1,6 +1,6 @@
 
 from django.urls import path
-from .views import user_views, avatar_views, friends_views
+from .views import user_views, avatar_views, friends_views, logout
 from .oauth2_views import create_oauth2_app
 from . import oauth42
 
@@ -24,15 +24,7 @@ urlpatterns = [
     path('protected/',  user_views.protected_view, name='protected_view'),
     path('oauth/logout/', oauth42.auth_logout, name='oauth_logout'),
     path('check-auth/', user_views.check_auth, name='check_auth'),
-
+    path('logout/', logout, name='logout'),
 
 ]
 
-
-""" urlpatterns = [
-    path('users/', views.get_users, name='get_users'),
-    path('users/<int:pk>/', views.get_user, name='get_user'),
-    path('users/create/', views.create_user, name='create_user'),
-    path('users/update/<int:pk>/', views.update_user, name='update_user'),
-    path('users/delete/<int:pk>/', views.delete_user, name='delete_user'),
-] """
