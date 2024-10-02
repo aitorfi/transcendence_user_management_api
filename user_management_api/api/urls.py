@@ -1,6 +1,8 @@
 
 from django.urls import path
 from .views import user_views, avatar_views, friends_views
+from .oauth2_views import create_oauth2_app
+from . import oauth42
 
 urlpatterns = [
     path("users/", user_views.get_users, name="get_users"),
@@ -15,6 +17,13 @@ urlpatterns = [
     path('users/upload-avatar/', avatar_views.upload_avatar, name='upload_avatar'),
     path('users/avatar/<int:user_id>/', avatar_views.get_avatar, name='get_avatar'),
     path('default-avatar/', avatar_views.get_default_avatar, name='get_default_avatar'),
+    path('create_oauth2_app/', create_oauth2_app, name='create_oauth2_app'),
+    path('oauth/login/', oauth42.auth_login, name='oauth_login'),
+    path('oauth/callback/', oauth42.auth_callback, name='oauth_callback'),
+    path('oauth/user_info/', oauth42.get_user_info, name='user_info'),
+    path('protected/',  user_views.protected_view, name='protected_view'),
+    path('oauth/logout/', oauth42.auth_logout, name='oauth_logout'),
+    path('check-auth/', user_views.check_auth, name='check_auth'),
 
 
 ]

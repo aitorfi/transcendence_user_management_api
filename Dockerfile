@@ -2,19 +2,18 @@ FROM python:latest
 
 WORKDIR /usr/src/app
 
-# Install Django
-RUN apt update && apt upgrade -y
-RUN python -m pip install Django
+# Install system dependencies
+RUN apt-get update && apt-get install -y netcat-openbsd
+
+# Install Python dependencies
+RUN pip install Django djangorestframework psycopg2-binary django-cors-headers Pillow django-oauth-toolkit requests-oauthlib
 
 COPY ./runserver.sh /usr/bin/
+RUN chmod +x /usr/bin/runserver.sh
 
-# Install project dependencies
-RUN pip install django djangorestframework
-RUN pip install django psycopg2
-RUN pip install django-cors-headers
-RUN pip install Pillow
+COPY ./wait-for-it.sh /usr/bin/
+RUN chmod +x /usr/bin/wait-for-it.sh
 
 EXPOSE 8080
 
-CMD [ "/usr/bin/runserver.sh" ]
-
+CMD ["/usr/bin/wait-for-it.sh", "postgres", "5432", "/usr/bin/runserver.sh"]

@@ -13,10 +13,15 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+LOGIN_URL = 'http://127.0.0.1:5500'
+LOGIN_REDIRECT_URL = 'http://127.0.0.1:5500'
+LOGOUT_REDIRECT_URL = 'http://127.0.0.1:5500'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -38,12 +43,21 @@ LOGGING = {
             'class': 'logging.StreamHandler',
         },
     },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'api': {  # Asume que 'api' es el nombre de tu aplicación Django
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
 }
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,6 +71,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
 	'api',
+    'oauth2_provider',  # Asegúrate de que esta línea esté aquí
+
 
 ]
 
@@ -69,6 +85,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
 ]
 
 
@@ -78,11 +95,17 @@ REST_FRAMEWORK = {
     ],
 }
 
-CORS_ALLOWED_ORIGINS = [
+""" CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "http://127.0.0.1:5501",
     "http://localhost:5501",
+] """
+
+CORS_ORIGIN_ALLOW_ALL = True 
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = [
+    'http://127.0.0.1:5500',
 ]
 
 ROOT_URLCONF = 'user_management_api.urls'
@@ -175,5 +198,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    
+    'oauth2_provider.backends.OAuth2Backend',
+
 ]
+
+# OAuth2 settings for 42
+OAUTH2_CLIENT_ID = 'u-s4t2ud-e59be17633af5d3818953e6314ebf3284657caef2c6580fe5273e86d207ba627'
+OAUTH2_CLIENT_SECRET = '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'
+OAUTH2_REDIRECT_URI = 'http://localhost:50000/api/oauth/callback/'
+OAUTH2_AUTH_URL = 'https://api.intra.42.fr/oauth/authorize'
+OAUTH2_TOKEN_URL = 'https://api.intra.42.fr/oauth/token'
+OAUTH2_API_BASE_URL = 'https://api.intra.42.fr/v2/'

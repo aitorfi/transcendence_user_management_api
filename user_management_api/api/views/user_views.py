@@ -10,10 +10,54 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 import os
 
+
+@login_required
+def check_auth(request):
+    return JsonResponse({
+        'authenticated': True,
+        'username': request.user.username,
+        'token': request.session.get('oauth_token')
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def protected_view(request):
+    return Response({"message": "Tienes acceso a esta vista protegida"})
+
+def home(request):
+    if request.user.is_authenticated:
+        return HttpResponse(f"Bienvenido, {request.user.username}! <a href='/oauth/logout/'>Cerrar sesión</a> | <a href='/protected/'>Vista protegida</a>")
+    else:
+        return HttpResponse("Bienvenido, visitante! <a href='/oauth/login/'>Iniciar sesión con 42</a>")
+def get_auth_url(request):
+    auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
+    return JsonResponse({"auth_url": auth_url})
+
+def oauth_login(request):
+    auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
+    return redirect(auth_url)
+
+def home(request):
+    if request.user.is_authenticated:
+        return HttpResponse(f"Bienvenido, {request.user.username}! <a href='/api/oauth/logout/'>Cerrar sesión</a> | <a href='/api/protected/'>Vista protegida</a>")
+    else:
+        return HttpResponse("Bienvenido, visitante! <a href='/api/oauth/login/'>Iniciar sesión con 42</a>")
+
+def get_auth_url(request):
+    auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
+    return JsonResponse({"auth_url": auth_url})
+
+def oauth_login(request):
+    auth_url = f"{settings.OAUTH2_AUTH_URL}?client_id={settings.OAUTH2_CLIENT_ID}&redirect_uri={settings.OAUTH2_REDIRECT_URI}&response_type=code"
+    return redirect(auth_url)
+    
 
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
@@ -87,7 +131,9 @@ def get_user_profile(request, pk):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-
+@login_required
+def protected_view(request):
+    return HttpResponse("Esta es una vista protegida. Solo usuarios autenticados pueden verla.")
 
 
 
