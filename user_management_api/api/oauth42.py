@@ -1,24 +1,77 @@
-from django.http import JsonResponse
-from django.shortcuts import redirect
-from django.conf import settings
-from requests_oauthlib import OAuth2Session
-from django.contrib.auth import login, logout
-from django.contrib.auth.models import User as DjangoUser
-from .models import ApiUser
-from rest_framework.authtoken.models import Token
-import logging
-from django.contrib.auth import get_user_model
-from django.contrib.auth import authenticate
+# Django imports
+from django.http import JsonResponse  # Provides a JSON-formatted HTTP response
+from django.shortcuts import redirect  # Function for redirecting to a specific URL
+from django.conf import settings  # Access to Django project settings
+from django.contrib.auth import login, logout, authenticate, get_user_model  # Authentication functions
+from django.contrib.auth.models import User as DjangoUser  # Django's built-in User model
+from django.utils import timezone  # Utilities for working with dates and times
+from django.core.serializers.json import DjangoJSONEncoder  # JSON encoder for Django objects
 
-from oauth2_provider.models import AccessToken
-from django.utils import timezone
-from datetime import timedelta
-from django.contrib.auth import login
+# Django Rest Framework imports
+from rest_framework.decorators import api_view  # Decorator for API views
+from rest_framework.response import Response  # REST framework's Response class
+from rest_framework import status  # Provides HTTP status codes
+from rest_framework.authtoken.models import Token  # Token model for authentication
 
+# OAuth2 related imports
+from requests_oauthlib import OAuth2Session  # Provides OAuth 2.0 support
+from oauth2_provider.models import AccessToken  # Model for OAuth2 access tokens
 
+# Simple JWT imports
+from rest_framework_simplejwt.tokens import RefreshToken  # Handles refresh tokens for JWT
 
-User = get_user_model()
-logger = logging.getLogger(__name__)
+# Third-party library imports
+import pyotp  # Implements TOTP (Time-based One-Time Password) algorithm for 2FA
+
+# Python standard library imports
+import json  # Provides JSON encoding and decoding functionality
+import logging  # Logging facility for Python
+from datetime import timedelta  # For working with durations
+
+# Local imports
+from .models import ApiUser  # Custom ApiUser model
+
+User = get_user_model()  # Get the active User model
+logger = logging.getLogger(__name__)  # Creates a logger instance for this module
+
+@api_view(['POST'])
+def oauth_verify_2fa(request):
+    user_id = request.data.get('user_id')
+    code = request.data.get('code')
+    
+    logger.debug(f"Received 2FA verification request for user_id: {user_id}, code: {code}")
+
+    if not user_id:
+        logger.error("OAuth 2FA verification attempted without user_id")
+        return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(id=user_id)
+        logger.debug(f"User found: {user.username}")
+    except User.DoesNotExist:
+        logger.error(f"User not found for OAuth 2FA verification: {user_id}")
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not code:
+        logger.warning(f"OAuth 2FA verification attempted without code for user {user.username}")
+        return Response({'error': 'Verification code is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    totp = pyotp.TOTP(user.apiuser.two_factor_secret)
+    logger.debug(f"TOTP secret for user {user.username}: {user.apiuser.two_factor_secret}")
+    logger.debug(f"Current TOTP code: {totp.now()}")
+
+    if totp.verify(code):
+        logger.info(f"OAuth 2FA verification successful for user {user.username}")
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': user.apiuser.get_full_user_data()
+        })
+    else:
+        logger.warning(f"OAuth 2FA verification failed for user {user.username}. Received code: {code}, Expected code: {totp.now()}")
+        return Response({'error': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 def get_oauth_session(state=None):
     return OAuth2Session(
@@ -50,32 +103,24 @@ def auth_callback(request):
         
         if user_info:
             user = create_or_update_user(user_info)
-            logger.debug(f"Usuario creado/actualizado: {user.username}")
             
-            # Crear o actualizar el token de acceso
-            expires = timezone.now() + timedelta(seconds=token['expires_in'])
-            access_token, _ = AccessToken.objects.update_or_create(
-                user=user,
-                defaults={
-                    'token': token['access_token'],
-                    'expires': expires,
-                    'scope': token.get('scope', '')
-                }
-            )
+            if user.apiuser.two_factor_enabled:
+                request.session['oauth_user_id'] = user.id
+                logger.info(f"OAuth login requires 2FA for user: {user.username}")
+                return redirect(f"{settings.LOGIN_REDIRECT_URL}?oauth2fa={user.id}")
             
-            # Iniciar sesión del usuario especificando el backend
-            login(request, user, backend='oauth2_provider.backends.OAuth2Backend')
-
+            # Si no se requiere 2FA, continúa con el proceso normal
+            refresh = RefreshToken.for_user(user)
             response_data = {
-                'status': 'success',
-                'message': 'Autenticación exitosa',
-                'user': user.apiuser.get_full_user_data(),
-                'access_token': access_token.token,
-                'redirect_url': settings.LOGIN_REDIRECT_URL
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': json.dumps(user.apiuser.get_full_user_data())
             }
             
-            return JsonResponse(response_data)
+            redirect_url = f"{settings.LOGIN_REDIRECT_URL}#" + "&".join([f"{key}={value}" for key, value in response_data.items()])
+            return redirect(redirect_url)
         else:
+            logger.error("No se pudo obtener la información del usuario")
             return JsonResponse({'error': 'No se pudo obtener la información del usuario'}, status=400)
     except Exception as e:
         logger.exception(f"Error en auth_callback: {str(e)}")
@@ -94,37 +139,51 @@ def get_user_info(request):
         logger.exception(f"Error fetching user info: {str(e)}")
         return None
 
+
 def create_or_update_user(user_info):
     oauth_id = str(user_info['id'])
     email = user_info.get('email', '')
     username = user_info['login']
     
+    logger.debug(f"Procesando usuario OAuth: {username}")
+
     try:
         api_user = ApiUser.objects.get(oauth_id=oauth_id)
         user = api_user.user
-        logger.debug(f"Usuario existente encontrado: {user.username}")
+        logger.info(f"Usuario existente encontrado: {user.username}")
+        created = False
     except ApiUser.DoesNotExist:
         user, created = User.objects.get_or_create(username=username)
         if created:
+            logger.info(f"Nuevo usuario creado: {username}")
             user.email = email
             user.set_unusable_password()
             user.is_active = True
             user.save()
-            logger.debug(f"Nuevo usuario creado: {user.username}")
-        api_user = ApiUser.objects.create(user=user, oauth_id=oauth_id, user_42=True)
-        logger.debug(f"Nuevo ApiUser creado para: {user.username}")
-    
-    # Actualizar información del usuario
+        
+        api_user = ApiUser.objects.create(
+            user=user,
+            oauth_id=oauth_id,
+            user_42=True
+        )
+        logger.info(f"Nuevo ApiUser creado para: {username}")
+
     user.email = email
     user.first_name = user_info.get('first_name', '')
     user.last_name = user_info.get('last_name', '')
-    user.is_active = True
     user.save()
 
     api_user.user_42 = True
+    
+    # Removemos la configuración automática de 2FA
+    if created:
+        logger.info(f"Nuevo usuario OAuth creado: {username}. 2FA no configurado automáticamente.")
+    else:
+        logger.info(f"Información de 2FA para usuario existente: {username}. Enabled: {api_user.two_factor_enabled}, Secret: {api_user.two_factor_secret}")
+
     api_user.save()
     
-    logger.debug(f"Usuario actualizado: {user.username}")
+    logger.info(f"Usuario actualizado/creado exitosamente: {username}")
     return user
 
 

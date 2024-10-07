@@ -1,8 +1,8 @@
-from django.http import JsonResponse
-from oauth2_provider.models import Application
-from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
-import json
+from django.http import JsonResponse  # Provides a JSON-formatted HTTP response
+from oauth2_provider.models import Application  # OAuth2 application model
+from django.contrib.auth.models import User  # Django's built-in User model
+from django.views.decorators.csrf import csrf_exempt  # Decorator to exempt views from CSRF protection
+import json  # Provides JSON encoding and decoding functionality
 
 @csrf_exempt
 def create_oauth2_app(request):

@@ -1,6 +1,6 @@
-from django.db import models
-from django.contrib.auth.models import User as DjangoUser
-
+from django.db import models  # Provides the ORM (Object-Relational Mapping) functionality for Django
+from django.contrib.auth.models import User as DjangoUser  # Django's built-in User model
+from django.utils import timezone  # Utilities for working with dates and times in Django
 
 
 # Create your models here.
@@ -11,6 +11,7 @@ class User(models.Model):
     friends_blocked = models.CharField(max_length=200, blank=True, null=True)
     oauth_id = models.CharField(max_length=200, blank=True, null=True)
     user_42 = models.BooleanField(default=False, blank=True, null=True)
+    two_factor_configured = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -23,7 +24,8 @@ class User(models.Model):
             'friends_request': self.friends_request,
             'friends_blocked': self.friends_blocked,
             'user_42': self.user_42,
-            'oauth_id': self.oauth_id
+            'oauth_id': self.oauth_id,
+            'two_factor_configured': self.two_factor_configured
         }
 
 class ApiUser(models.Model):
@@ -39,6 +41,9 @@ class ApiUser(models.Model):
     friends_blocked = models.CharField(max_length=200, blank=True, null=True)
     user_42 = models.BooleanField(default=False, blank=True, null=True)
     oauth_id = models.CharField(max_length=200, blank=True, null=True)
+    two_factor_enabled = models.BooleanField(default=False)
+    two_factor_secret = models.CharField(max_length=32, blank=True, null=True)
+    two_factor_configured = models.BooleanField(default=False)
 
     def get_full_user_data(self):
         return {
@@ -49,12 +54,16 @@ class ApiUser(models.Model):
             'last_name': self.user.last_name,
             'friends': self.friends,
             'friends_wait': self.friends_wait,
-            'friends_request': self.friends_wait,
+            'friends_request': self.friends_request,
             'friends_blocked': self.friends_blocked,
             'user_42': self.user_42,
             'oauth_id': self.oauth_id,
-            'date_joined': self.user.date_joined,
-            'last_login': self.user.last_login
+            'date_joined': timezone.localtime(self.user.date_joined).isoformat(),
+            'last_login': timezone.localtime(self.user.last_login).isoformat() if self.user.last_login else None,
+            'two_factor_enabled': self.two_factor_enabled,
+            'two_factor_configured': self.two_factor_configured
+
         }
+
     def __str__(self):
         return self.user.username

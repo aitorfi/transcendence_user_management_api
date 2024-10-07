@@ -1,19 +1,62 @@
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth.models import User as DjangoUser
-from ..models import User
-from ..serializer import UserSerializer
-from ..models import ApiUser
-from ..serializer import ApiUserSerializer
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from django.http import HttpResponse, JsonResponse
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-import os
+# Django imports
+from django.contrib.auth import authenticate  # Handles user authentication
+from django.contrib.auth.models import User as DjangoUser  # Django's built-in User model
+from django.contrib.auth.decorators import login_required  # Decorator to restrict access to logged-in users
+from django.conf import settings  # Access to Django project settings
+from django.http import HttpResponse, JsonResponse  # HTTP response classes
+
+# Django Rest Framework imports
+from rest_framework import status  # Provides HTTP status codes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes  # Decorators for API views
+from rest_framework.response import Response  # REST framework's Response class
+from rest_framework.authentication import TokenAuthentication  # Token-based authentication
+from rest_framework.authtoken.models import Token  # Token model for authentication
+from rest_framework.permissions import IsAuthenticated  # Permission class to ensure user is authenticated
+
+# Simple JWT imports
+from rest_framework_simplejwt.tokens import RefreshToken  # Handles refresh tokens for JWT
+from rest_framework_simplejwt.authentication import JWTAuthentication  # JWT authentication backend
+
+# Third-party library imports
+import pyotp  # Implements TOTP (Time-based One-Time Password) algorithm for 2FA
+
+# Python standard library imports
+import os  # Operating system interface, for file and path operations
+import logging  # Logging facility for Python
+
+# Local imports
+from ..models import User, ApiUser  # Custom User and ApiUser models
+from ..serializer import UserSerializer, ApiUserSerializer  # Serializers for User and ApiUser models
+
+logger = logging.getLogger(__name__)  # Creates a logger instance for this module
+logging.basicConfig(filename='myapp.log', level=logging.DEBUG)  # Configures basic logging to a file
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    try:
+        refresh_token = request.data.get("refresh_token")
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+    except TokenError:
+        return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def test_token(request):
+    user = request.user
+    return Response({
+        'user_id': user.id,
+        'username': user.username,
+    })
 
 
 def logout(request):
@@ -124,42 +167,53 @@ def update_user_profile(request, pk):
     return Response(api_user.get_full_user_data(), status=status.HTTP_200_OK)
 
 
-
-
-
-
 @api_view(['GET'])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def get_user_profile(request, pk):
-    print(f"Attempting to fetch profile for user ID: {pk}")
+def get_user_profile(request):
     try:
-        django_user = DjangoUser.objects.get(id=pk)
-        api_user, created = ApiUser.objects.get_or_create(user=django_user)
-        if created:
-            print(f"ApiUser created for user ID: {pk}")
-        print(f"ApiUser found: {api_user}")
+        api_user = ApiUser.objects.get(user=request.user)
         return Response(api_user.get_full_user_data())
-    except DjangoUser.DoesNotExist:
-        print(f"No User found for ID: {pk}")
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-
-
+    except ApiUser.DoesNotExist:
+        return Response({"error": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
+    
 
 @api_view(['POST'])
 def login_user(request):
+    logger.debug(f"Received login request for user: {request.data.get('username')}")
     username = request.data.get('username')
     password = request.data.get('password')
+    two_factor_code = request.data.get('two_factor_code')
 
     user = authenticate(username=username, password=password)
+    
     if user:
-        token, _ = Token.objects.get_or_create(user=user)
+        try:
+            api_user = ApiUser.objects.get(user=user)
+            if api_user.two_factor_enabled:
+                if not two_factor_code:
+                    logger.info(f"2FA required for user {username}")
+                    return Response({'require_2fa': True}, status=status.HTTP_200_OK)
+                
+                totp = pyotp.TOTP(api_user.two_factor_secret)
+                if not totp.verify(two_factor_code):
+                    logger.warning(f"Invalid 2FA code for user {username}")
+                    return Response({'error': 'Invalid 2FA code'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except ApiUser.DoesNotExist:
+            logger.error(f"ApiUser not found for user: {username}")
+            return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        logger.info(f"User {username} logged in successfully")
+        refresh = RefreshToken.for_user(user)
         return Response({
-            'token': token.key,
-            'user_id': user.pk,
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user_id': user.id,
             'username': user.username
         })
+    
+    logger.warning(f"Invalid login attempt for user: {username}")
     return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 

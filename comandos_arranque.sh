@@ -30,3 +30,4 @@ create_user "aitor" "aitor@gmail.com" "aitor" "Aitor" "Completo" 28 "https://eje
 create_user "iker" "iker@gmail.com" "iker" "Iker" "Completo" 29 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "1,3" "0" "0"
 create_user "alejandro" "alejandro@gmail.com" "alejandro" "Alejandro" "Completo" 30 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "1,2" "0" "0"
 create_user "goiko" "goiko@gmail.com" "goiko" "Goiko" "Completo" 31 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "2,3" "0" "0"pw
+

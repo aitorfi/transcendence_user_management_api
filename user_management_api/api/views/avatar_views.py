@@ -1,17 +1,24 @@
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth.models import User as DjangoUser
-from ..models import User, ApiUser
-from ..serializer import UserSerializer, ApiUserSerializer
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from django.http import HttpResponse, FileResponse
-from django.conf import settings
-import os
-import logging
+# Django imports
+from django.contrib.auth import authenticate  # Handles user authentication
+from django.contrib.auth.models import User as DjangoUser  # Django's built-in User model
+from django.conf import settings  # Access to Django project settings
+from django.http import HttpResponse, FileResponse  # HTTP response classes
+
+# Rest Framework imports
+from rest_framework import status  # HTTP status codes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes  # Decorators for API views
+from rest_framework.response import Response  # REST framework's Response class
+from rest_framework.authentication import TokenAuthentication  # Token-based authentication
+from rest_framework.authtoken.models import Token  # Token model for authentication
+from rest_framework.permissions import IsAuthenticated  # Permission class to ensure user is authenticated
+
+# Local imports
+from ..models import User, ApiUser  # Custom User and ApiUser models
+from ..serializer import UserSerializer, ApiUserSerializer  # Serializers for User and ApiUser models
+
+# Python standard library imports
+import os  # Operating system interface, for file and path operations
+import logging  # Logging facility for Python
 
 logger = logging.getLogger(__name__)
 

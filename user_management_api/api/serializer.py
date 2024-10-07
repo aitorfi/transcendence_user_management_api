@@ -1,13 +1,13 @@
-from rest_framework import serializers
-from django.contrib.auth.models import User as DjangoUser
-from .models import ApiUser, User
+# Django imports
+from django.contrib.auth import login, get_user_model, authenticate  # Authentication functions
+from django.contrib.auth.models import User as DjangoUser  # Django's built-in User model
 
-from django.contrib.auth import login
-from django.contrib.auth import get_user_model
-from django.contrib.auth import authenticate
+# Django Rest Framework imports
+from rest_framework import serializers  # Serialization framework for REST APIs
 
-User = get_user_model()
-
+# Local imports
+from .models import ApiUser, User  # Custom User models
+User = get_user_model()  # Get the active User model
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

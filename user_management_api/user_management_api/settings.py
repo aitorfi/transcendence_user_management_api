@@ -9,9 +9,9 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
-from pathlib import Path
-import os
+import os  # Operating system interface
+from pathlib import Path  # Object-oriented filesystem paths
+from datetime import timedelta  # Duration of time
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
@@ -22,6 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGIN_URL = 'http://127.0.0.1:5500'
 LOGIN_REDIRECT_URL = 'http://127.0.0.1:5500'
 LOGOUT_REDIRECT_URL = 'http://127.0.0.1:5500'
+LOG_FILE = os.path.join(BASE_DIR, 'debug.log')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -38,26 +39,34 @@ ALLOWED_HOSTS = ['*']
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+        },
         'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'api': {  # Asume que 'api' es el nombre de tu aplicación Django
-            'handlers': ['console'],
+        '': {  # This empty string catches all loggers
+            'handlers': ['file', 'console'],
             'level': 'DEBUG',
+            'propagate': True,
         },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
     },
 }
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -71,8 +80,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
 	'api',
-    'oauth2_provider',  # Asegúrate de que esta línea esté aquí
-
+    'oauth2_provider',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 
 ]
 
@@ -86,6 +96,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
+    'api.custom_middleware.TokenRequestPrintMiddleware',
+
 ]
 
 OAUTH2_PROVIDER = {
@@ -96,16 +108,46 @@ OAUTH2_PROVIDER = {
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
 }
 
-""" CORS_ALLOWED_ORIGINS = [
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+
+}
+
+CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
     "http://127.0.0.1:5501",
     "http://localhost:5501",
-] """
+]
 
 CORS_ORIGIN_ALLOW_ALL = True 
 CORS_ALLOW_CREDENTIALS = True
