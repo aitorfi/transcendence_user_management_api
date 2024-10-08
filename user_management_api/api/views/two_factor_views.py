@@ -77,7 +77,7 @@ def enable_2fa(request):
     })
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+#@permission_classes([IsAuthenticated])
 def verify_2fa(request):
     user = request.user.apiuser
     code = request.data.get('code')

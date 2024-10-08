@@ -12,6 +12,7 @@ from rest_framework.decorators import api_view  # Decorator for API views
 from rest_framework.response import Response  # REST framework's Response class
 from rest_framework import status  # Provides HTTP status codes
 from rest_framework.authtoken.models import Token  # Token model for authentication
+from rest_framework.request import Request
 
 # OAuth2 related imports
 from requests_oauthlib import OAuth2Session  # Provides OAuth 2.0 support
@@ -22,6 +23,7 @@ from rest_framework_simplejwt.tokens import RefreshToken  # Handles refresh toke
 
 # Third-party library imports
 import pyotp  # Implements TOTP (Time-based One-Time Password) algorithm for 2FA
+import time
 
 # Python standard library imports
 import json  # Provides JSON encoding and decoding functionality
@@ -34,6 +36,7 @@ from .models import ApiUser  # Custom ApiUser model
 User = get_user_model()  # Get the active User model
 logger = logging.getLogger(__name__)  # Creates a logger instance for this module
 
+
 @api_view(['POST'])
 def oauth_verify_2fa(request):
     user_id = request.data.get('user_id')
@@ -41,9 +44,8 @@ def oauth_verify_2fa(request):
     
     logger.debug(f"Received 2FA verification request for user_id: {user_id}, code: {code}")
 
-    if not user_id:
-        logger.error("OAuth 2FA verification attempted without user_id")
-        return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not user_id or not code:
+        return Response({'error': 'User ID and code are required'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         user = User.objects.get(id=user_id)
@@ -52,15 +54,17 @@ def oauth_verify_2fa(request):
         logger.error(f"User not found for OAuth 2FA verification: {user_id}")
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    if not code:
-        logger.warning(f"OAuth 2FA verification attempted without code for user {user.username}")
-        return Response({'error': 'Verification code is required'}, status=status.HTTP_400_BAD_REQUEST)
-
     totp = pyotp.TOTP(user.apiuser.two_factor_secret)
+    current_time = int(time.time())
+
     logger.debug(f"TOTP secret for user {user.username}: {user.apiuser.two_factor_secret}")
     logger.debug(f"Current TOTP code: {totp.now()}")
+    logger.debug(f"Received code: {code}")
+    logger.debug(f"Current timestamp: {current_time}")
+    logger.debug(f"TOTP at t-30s: {totp.at(for_time=current_time - 30)}")
+    logger.debug(f"TOTP at t+30s: {totp.at(for_time=current_time + 30)}")
 
-    if totp.verify(code):
+    if totp.verify(code, valid_window=2):  # Esto permite una ventana de ±60 segundos
         logger.info(f"OAuth 2FA verification successful for user {user.username}")
         refresh = RefreshToken.for_user(user)
         return Response({
@@ -71,7 +75,6 @@ def oauth_verify_2fa(request):
     else:
         logger.warning(f"OAuth 2FA verification failed for user {user.username}. Received code: {code}, Expected code: {totp.now()}")
         return Response({'error': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
-
 
 def get_oauth_session(state=None):
     return OAuth2Session(
