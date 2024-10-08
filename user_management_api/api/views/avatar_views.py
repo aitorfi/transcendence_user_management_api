@@ -12,6 +12,10 @@ from rest_framework.authentication import TokenAuthentication  # Token-based aut
 from rest_framework.authtoken.models import Token  # Token model for authentication
 from rest_framework.permissions import IsAuthenticated  # Permission class to ensure user is authenticated
 
+# Simple JWT imports
+from rest_framework_simplejwt.tokens import RefreshToken  # Handles refresh tokens for JWT
+from rest_framework_simplejwt.authentication import JWTAuthentication  # JWT authentication backend
+
 # Local imports
 from ..models import User, ApiUser  # Custom User and ApiUser models
 from ..serializer import UserSerializer, ApiUserSerializer  # Serializers for User and ApiUser models
@@ -54,7 +58,7 @@ def get_avatar(request, user_id):
     return get_default_avatar(request)
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def upload_avatar(request):
     if 'avatar_image' not in request.FILES:

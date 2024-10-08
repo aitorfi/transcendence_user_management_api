@@ -32,6 +32,47 @@ logger = logging.getLogger(__name__)  # Creates a logger instance for this modul
 logging.basicConfig(filename='myapp.log', level=logging.DEBUG)  # Configures basic logging to a file
 
 
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_friends(request):
+    logger.debug(f"get_user_friends called for user: {request.user.username}")
+    try:
+        api_user = ApiUser.objects.get(user=request.user)
+        logger.debug(f"ApiUser found: {api_user}")
+        
+        if not api_user.friends:
+            logger.debug("User has no friends")
+            return Response({"friends": []})
+        
+        logger.debug(f"User's friends string: {api_user.friends}")
+        friends_ids = [int(friend_id) for friend_id in api_user.friends.split(',') if friend_id.strip().isdigit()]
+        logger.debug(f"Parsed friend IDs: {friends_ids}")
+        
+        friends = DjangoUser.objects.filter(id__in=friends_ids).values('id', 'username')
+        logger.debug(f"Found friends: {list(friends)}")
+        
+        return Response({"friends": list(friends)})
+    
+    except ApiUser.DoesNotExist:
+        logger.error(f"ApiUser not found for user: {request.user.username}")
+        return Response({"error": "User profile not found"}, status=404)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_user_friends: {str(e)}")
+        return Response({"error": "An unexpected error occurred"}, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_user_list(request):
+
+    users = ApiUser.objects.all().values('user__id', 'user__username')
+    return Response(list(users))
+
+
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
@@ -96,7 +137,7 @@ def check_auth(request):
 
 
 @api_view(['GET'])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def protected_view(request):
     return Response({"message": "Tienes acceso a esta vista protegida"})
@@ -117,7 +158,7 @@ def oauth_login(request):
 
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def change_password(request, pk):
     user = request.user
@@ -145,7 +186,8 @@ def change_password(request, pk):
     return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
+
 @permission_classes([IsAuthenticated])
 def update_user_profile(request, pk):
     try:
@@ -176,7 +218,7 @@ def get_user_profile(request):
         return Response(api_user.get_full_user_data())
     except ApiUser.DoesNotExist:
         return Response({"error": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
-    
+
 
 @api_view(['POST'])
 def login_user(request):
@@ -218,7 +260,7 @@ def login_user(request):
 
 
 @api_view(['POST'])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def sign_out_user(request):
     try:

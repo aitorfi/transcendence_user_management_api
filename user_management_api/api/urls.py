@@ -39,6 +39,11 @@ urlpatterns = [
     path('verify-2fa/', two_factor_views.verify_2fa, name='verify_2fa'),
     path('disable-2fa/', two_factor_views.disable_2fa, name='disable_2fa'),
     path('oauth-2fa-verify/', oauth42.oauth_verify_2fa, name='oauth_2fa_verify'),
+    path('users/update-profile/', user_views.update_user_profile, name='update_user_profile'),
+    path('users/list/', user_views.get_user_list, name='user_list'),
+    path('users/get_user_friends/', user_views.get_user_friends, name='get_user_friends'),
+
+
 
 
 ]

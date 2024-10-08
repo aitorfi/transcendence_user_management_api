@@ -98,6 +98,8 @@ MIDDLEWARE = [
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'api.custom_middleware.TokenRequestPrintMiddleware',
 
+
+
 ]
 
 OAUTH2_PROVIDER = {
