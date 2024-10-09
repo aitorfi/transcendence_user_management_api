@@ -41,7 +41,17 @@ urlpatterns = [
     path('oauth-2fa-verify/', oauth42.oauth_verify_2fa, name='oauth_2fa_verify'),
     path('users/update-profile/', user_views.update_user_profile, name='update_user_profile'),
     path('users/list/', user_views.get_user_list, name='user_list'),
-    path('users/get_user_friends/', user_views.get_user_friends, name='get_user_friends'),
+    path('friends/get_user_friends/', friends_views.get_user_friends, name='get_user_friends'),
+    path('friends/get_friends_wait/', friends_views.get_friends_wait, name='get_friends_wait'),
+    path('friends/get_friends_blocked/', friends_views.get_friends_blocked, name='get_friends_blocked'),
+    path('friends/get_friends_request/', friends_views.get_friends_request, name='get_friends_request'),
+    path('friends/remove/<int:friend_id>/', friends_views.remove_friend, name='remove_friend'),
+    path('friends/remove-blocked/<int:friend_id>/', friends_views.remove_blocked, name='remove_bloked'),
+    path('friends/add/', friends_views.add_friend, name='add_friend'),
+
+
+
+
 
 
 

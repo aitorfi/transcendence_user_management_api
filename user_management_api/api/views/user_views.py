@@ -35,41 +35,10 @@ logging.basicConfig(filename='myapp.log', level=logging.DEBUG)  # Configures bas
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def get_user_friends(request):
-    logger.debug(f"get_user_friends called for user: {request.user.username}")
-    try:
-        api_user = ApiUser.objects.get(user=request.user)
-        logger.debug(f"ApiUser found: {api_user}")
-        
-        if not api_user.friends:
-            logger.debug("User has no friends")
-            return Response({"friends": []})
-        
-        logger.debug(f"User's friends string: {api_user.friends}")
-        friends_ids = [int(friend_id) for friend_id in api_user.friends.split(',') if friend_id.strip().isdigit()]
-        logger.debug(f"Parsed friend IDs: {friends_ids}")
-        
-        friends = DjangoUser.objects.filter(id__in=friends_ids).values('id', 'username')
-        logger.debug(f"Found friends: {list(friends)}")
-        
-        return Response({"friends": list(friends)})
-    
-    except ApiUser.DoesNotExist:
-        logger.error(f"ApiUser not found for user: {request.user.username}")
-        return Response({"error": "User profile not found"}, status=404)
-    except Exception as e:
-        logger.exception(f"Unexpected error in get_user_friends: {str(e)}")
-        return Response({"error": "An unexpected error occurred"}, status=500)
-
-
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
 def get_user_list(request):
 
     users = ApiUser.objects.all().values('user__id', 'user__username')
     return Response(list(users))
-
 
 
 
