@@ -103,12 +103,8 @@ def verify_2fa(request):
     logger.debug(f"Generated code: {totp.now()}")
     logger.debug(f"Received code: {code}")
 
-    # Log códigos válidos en un rango de tiempo más amplio
-    logger.debug("Códigos válidos en los últimos 5 minutos:")
-    for t in range(current_time - 300, current_time + 301, 30):
-        logger.debug(f"Tiempo: {t}, Código: {totp.at(t)}")
-
-    if totp.verify(code, valid_window=10):  # Ampliar la ventana a 2.5 minutos antes y después
+    # Aumentar la ventana de tiempo
+    if totp.verify(code, valid_window=15):  # Aumentado a 15 (7.5 minutos antes y después)
         logger.info(f"2FA verification successful for user {user.user.username}")
         user.two_factor_configured = True
         user.save()
@@ -116,7 +112,7 @@ def verify_2fa(request):
     else:
         logger.warning(f"Invalid 2FA code for user {user.user.username}")
         return Response({'error': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
-
+        
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def disable_2fa(request):

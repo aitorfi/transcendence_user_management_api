@@ -26,10 +26,10 @@ create_user_42() {
 }
 
 # Crear usuarios
-create_user_42 "aitor" "aitor@gmail.com" "aitor" "Aitor" "Completo" 28 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "2,3" "0" "0" "0" 
-create_user_42 "iker" "iker@gmail.com" "iker" "Iker" "Completo" 29 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "1,3" "0" "0" "0" 
-create_user_42 "alejandro" "alejandro@gmail.com" "alejandro" "Alejandro" "Completo" 30 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "1,2" "0" "0" "0" 
-create_user_42 "goiko" "goiko@gmail.com" "goiko" "Goiko" "Completo" 31 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "2,3" "0" "0" "0" 
+create_user_42 "aitor" "aitor@gmail.com" "aitor" "Aitor" "Completo" 28 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "2,3" "4,6" "5,9" "10" 
+create_user_42 "iker" "iker@gmail.com" "iker" "Iker" "Completo" 29 "https://ejemplo.com/avatares/completo.png" "online" true "session_id_completo_123456" "1,3" "4,8" "6, 12" "8,15" 
+create_user_42 "alejandro" "alejandro@gmail.com" "alejandro" "Alejandro" "Completo" 30 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "1,2" "2" "9,10" "13,15" 
+create_user_42 "goiko" "goiko@gmail.com" "goiko" "Goiko" "Completo" 31 "https://ejemplo.com/avatares/completo.png" "offline" true "session_id_completo_123456" "2,3" "8,3" "6,9" "20,11" 
 
 # Función para crear usuario
 create_user() {
