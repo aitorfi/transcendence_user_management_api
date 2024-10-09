@@ -23,8 +23,6 @@ services:
     restart: unless-stopped
     networks:
       - net
-    environment:
-      - DATABASE_URL=postgres://root:root@postgres:5432/api-db
 
 networks:
   net:

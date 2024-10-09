@@ -1,20 +1,31 @@
-FROM python:latest
+FROM python:3.11
 
 WORKDIR /usr/src/app
 
-# Install Django
-RUN apt update && apt upgrade -y
-RUN python -m pip install Django
+# Install system dependencies
+RUN apt-get update && apt-get install -y netcat-openbsd
+
+# Install Python dependencies
+#RUN pip install Django djangorestframework psycopg2-binary django-cors-headers Pillow django-oauth-toolkit requests-oauthlib djangorestframework-simplejwt pyotp qrcode
+RUN pip install Django djangorestframework psycopg2 django-cors-headers Pillow django-oauth-toolkit requests-oauthlib djangorestframework-simplejwt pyotp qrcode
+
+# Django: High-level Python web framework
+# djangorestframework: Toolkit for building Web APIs in Django
+# psycopg2-binary: PostgreSQL database adapter for Python
+# django-cors-headers: Handles CORS headers for Django responses
+# Pillow: Python Imaging Library -> Upload Avatars
+# django-oauth-toolkit: Provides OAuth2 implementation for Django
+# requests-oauthlib: Library for making OAuth1 and OAuth2 requests
+# djangorestframework-simplejwt: JWT authentication backend for Django REST Framework
+# pyotp: Python implementation of the One-Time Password (OTP) algorithm -> 2FA
+# qrcode: QR code generator in Python -> 2FA
 
 COPY ./runserver.sh /usr/bin/
+RUN chmod +x /usr/bin/runserver.sh
 
-# Install project dependencies
-RUN pip install django djangorestframework
-RUN pip install django psycopg2
-RUN pip install django-cors-headers
-RUN pip install Pillow
+COPY ./wait-for-it.sh /usr/bin/
+RUN chmod +x /usr/bin/wait-for-it.sh
 
 EXPOSE 8080
 
-CMD [ "/usr/bin/runserver.sh" ]
-
+CMD ["/usr/bin/wait-for-it.sh", "postgres", "5432", "/usr/bin/runserver.sh"]

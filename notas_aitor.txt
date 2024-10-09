@@ -29,5 +29,5 @@ si ya te vas a cambiar de ordenador.
     docker network prune -f
 
 me mato
-    docker compose down --orphan --remove
-    docker network prune -a -f
+docker compose down --remove-orphans
+docker network prune -f
