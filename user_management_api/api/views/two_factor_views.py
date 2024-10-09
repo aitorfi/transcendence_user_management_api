@@ -16,6 +16,8 @@ import logging  # Provides a flexible framework for generating log messages
 # Local imports
 from ..models import ApiUser  # Custom ApiUser model
 logger = logging.getLogger(__name__)  # Creates a logger instance for this module
+import time
+
 
 
 @api_view(['POST'])
@@ -76,21 +78,43 @@ def enable_2fa(request):
         'qr_code': qr_code
     })
 
-@api_view(['POST'])
-#@permission_classes([IsAuthenticated])
-def verify_2fa(request):
-    user = request.user.apiuser
-    code = request.data.get('code')
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_2fa(request):
+    logger.debug(f"Received 2FA verification request: {request.data}")
+    
+    code = request.data.get('code')
     if not code:
+        logger.warning("No verification code provided")
         return Response({'error': 'Verification code is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        user = request.user.apiuser
+    except AttributeError:
+        logger.error(f"ApiUser not found for user {request.user.username}")
+        return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
     totp = pyotp.TOTP(user.two_factor_secret)
-    if totp.verify(code):
+    current_time = int(time.time())
+
+    logger.debug(f"Secret: {user.two_factor_secret}")
+    logger.debug(f"Current time: {current_time}")
+    logger.debug(f"Generated code: {totp.now()}")
+    logger.debug(f"Received code: {code}")
+
+    # Log códigos válidos en un rango de tiempo más amplio
+    logger.debug("Códigos válidos en los últimos 5 minutos:")
+    for t in range(current_time - 300, current_time + 301, 30):
+        logger.debug(f"Tiempo: {t}, Código: {totp.at(t)}")
+
+    if totp.verify(code, valid_window=10):  # Ampliar la ventana a 2.5 minutos antes y después
+        logger.info(f"2FA verification successful for user {user.user.username}")
         user.two_factor_configured = True
         user.save()
         return Response({'message': '2FA verification successful'})
     else:
+        logger.warning(f"Invalid 2FA code for user {user.user.username}")
         return Response({'error': 'Invalid verification code'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])

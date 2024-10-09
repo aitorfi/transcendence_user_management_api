@@ -18,7 +18,7 @@ from rest_framework.permissions import IsAuthenticated  # Permission class to en
 from rest_framework_simplejwt.tokens import RefreshToken  # Handles refresh tokens for JWT
 
 # Python standard library imports
-import os  # Operating system interface, for file and path operations
+    import os  # Operating system interface, for file and path operations
 
 # Third-party library imports
 import requests  # HTTP library for making requests

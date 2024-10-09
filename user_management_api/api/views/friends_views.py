@@ -36,6 +36,68 @@ logging.basicConfig(filename='myapp.log', level=logging.DEBUG)  # Configures bas
 # Python standard library imports
 import os  # Operating system interface, for file and path operations
 
+@api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def remove_wait(request, friend_id):
+    logger.debug(f"remove_friend waiting called for user: {request.user.username}, friend_id: {friend_id}")
+    try:
+        api_user = ApiUser.objects.get(user=request.user)
+        
+        if not api_user.friends_wait:
+            return Response({"error": "You have no friends waiting to remove"}, status=400)
+        
+        friends_ids = [int(id) for id in api_user.friends_wait.split(',') if id.strip().isdigit()]
+        
+        if friend_id not in friends_ids:
+            return Response({"error": "This user is not in your friends list"}, status=400)
+        
+        friends_ids.remove(friend_id)
+        api_user.friends_wait = ','.join(map(str, friends_ids))
+        api_user.save()
+        
+        return Response({"message": "Friend wait removed successfully"})
+    
+    except ApiUser.DoesNotExist:
+        return Response({"error": "User profile not found"}, status=404)
+    except Exception as e:
+        logger.exception(f"Unexpected error in remove_friend: {str(e)}")
+        return Response({"error": "An unexpected error occurred"}, status=500)
+
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def add_friends_wait(request):
+    friend_id = request.data.get('friend_id')
+    if not friend_id:
+        return Response({"error": "Friend ID is required"}, status=400)
+
+    try:
+        friends_wait = DjangoUser.objects.get(id=friend_id)
+        api_user = ApiUser.objects.get(user=request.user)
+        
+        if not api_user.friends_wait:
+            api_user.friends_wait = str(friend_id)
+        else:
+            friends_wait_list = api_user.friends_wait.split(',')
+            if str(friend_id) not in friends_wait_list:
+                friends_wait_list.append(str(friend_id))
+                api_user.friends_wait = ','.join(friends_wait_list)
+            else:
+                return Response({"message": "User is already in friends_wait list"}, status=200)
+        
+        api_user.save()
+        return Response({"message": "Friend added to wait list successfully"}, status=201)
+    
+    except DjangoUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
+    except ApiUser.DoesNotExist:
+        return Response({"error": "ApiUser not found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
