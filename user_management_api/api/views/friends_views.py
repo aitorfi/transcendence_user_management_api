@@ -64,6 +64,47 @@ def remove_wait(request, friend_id):
         logger.exception(f"Unexpected error in remove_friend: {str(e)}")
         return Response({"error": "An unexpected error occurred"}, status=500)
 
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def add_friends_request(request):
+    friend_id = request.data.get('friend_id')
+    if not friend_id:
+        return Response({"error": "Friend ID is required"}, status=400)
+
+    try:
+        # Obtener el usuario amigo (el receptor de la solicitud)
+        friend_user = DjangoUser.objects.get(id=friend_id)
+        friend_api_user = ApiUser.objects.get(user=friend_user)
+        
+        # Obtener el usuario que envía la solicitud (usuario autenticado)
+        api_user = ApiUser.objects.get(user=request.user)
+        
+        # Actualizar el campo 'friends_request' del amigo para que contenga el ID del usuario autenticado
+        if not friend_api_user.friends_request:
+            # Si el campo está vacío, asigna directamente el ID del usuario autenticado
+            friend_api_user.friends_request = str(api_user.user.id)  # El usuario autenticado que envía la solicitud
+        else:
+            # Si ya existen solicitudes, agrega el ID del usuario autenticado si no está presente
+            friends_request_list = friend_api_user.friends_request.split(',')
+            if str(api_user.user.id) not in friends_request_list:
+                friends_request_list.append(str(api_user.user.id))  # Añadir el ID del usuario autenticado
+                friend_api_user.friends_request = ','.join(friends_request_list)
+            else:
+                return Response({"message": "Friend request already sent to this user"}, status=200)
+        
+        # Guardar los cambios en el usuario amigo
+        friend_api_user.save()
+        return Response({"message": "Friend request sent successfully"}, status=201)
+    
+    except DjangoUser.DoesNotExist:
+        return Response({"error": "Friend user not found"}, status=404)
+    except ApiUser.DoesNotExist:
+        return Response({"error": "ApiUser for friend not found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+
 
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
