@@ -37,9 +37,10 @@ git branch display_name
 git switch display_name
 git status
 git add .
-git commit-m "display_name"
+git commit -m "display_name"
 git push
+        git push --set-upstream origin display_name
 git pull origin master
 git add .
-git commit-m "que display_name"
+git commit -m "que display_name"
 git push
