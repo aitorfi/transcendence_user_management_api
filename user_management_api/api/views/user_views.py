@@ -129,12 +129,8 @@ def oauth_login(request):
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def change_password(request, pk):
+def change_password(request):
     user = request.user
-
-    if user.id != pk:
-        return Response({"error": "You don't have permission to change this user's password"}, 
-                        status=status.HTTP_403_FORBIDDEN)
 
     current_password = request.data.get('current_password')
     new_password = request.data.get('new_password')
@@ -158,9 +154,9 @@ def change_password(request, pk):
 @authentication_classes([JWTAuthentication])
 
 @permission_classes([IsAuthenticated])
-def update_user_profile(request, pk):
+def update_user_profile(request):
     try:
-        django_user = DjangoUser.objects.get(id=pk)
+        django_user = request.user 
         api_user = ApiUser.objects.get(user=django_user)
     except (DjangoUser.DoesNotExist, ApiUser.DoesNotExist):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
