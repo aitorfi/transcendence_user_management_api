@@ -36,6 +36,48 @@ logging.basicConfig(filename='myapp.log', level=logging.DEBUG)  # Configures bas
 # Python standard library imports
 import os  # Operating system interface, for file and path operations
 
+
+
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+import logging
+
+logger = logging.getLogger(__name__)
+
+@api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def remove_request(request, friend_id):
+    logger.debug(f"remove_request called for user: {request.user.username}, friend_id: {friend_id}")
+    try:
+        api_user = ApiUser.objects.get(user=request.user)
+        
+        if not api_user.friends_request:
+            return Response({"error": "You have no friend requests to remove"}, status=400)
+        
+        # Convertimos friend_id a entero
+        friend_id = int(friend_id)
+        
+        friends_ids = [int(id) for id in api_user.friends_request.split(',') if id.strip().isdigit()]
+        logger.debug(f"Current friend requests: {friends_ids}")
+        
+        if friend_id not in friends_ids:
+            return Response({"error": "This user is not in your friend requests"}, status=400)
+        
+        friends_ids.remove(friend_id)
+        api_user.friends_request = ','.join(map(str, friends_ids))
+        api_user.save()
+        
+        return Response({"message": "Friend request removed successfully"})
+    
+    except ApiUser.DoesNotExist:
+        return Response({"error": "User profile not found"}, status=404)
+    except Exception as e:
+        logger.exception(f"Unexpected error in remove_request: {str(e)}")
+        return Response({"error": "An unexpected error occurred"}, status=500)
+
 @api_view(['DELETE'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
