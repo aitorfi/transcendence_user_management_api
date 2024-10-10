@@ -74,8 +74,8 @@ def add_friends_request(request):
 
     try:
         # Obtener el usuario amigo (el receptor de la solicitud)
-        friend_user = DjangoUser.objects.get(id=friend_id)
-        friend_api_user = ApiUser.objects.get(user=friend_user)
+        friend_user = DjangoUser.objects.get(id=friend_id) #iker   id  AMIGO
+        friend_api_user = ApiUser.objects.get(user=friend_user) #iker username    
         
         # Obtener el usuario que envía la solicitud (usuario autenticado)
         api_user = ApiUser.objects.get(user=request.user)
@@ -164,6 +164,60 @@ def add_friend(request):
         api_user.save()
         return Response({"message": "Friend added successfully"}, status=201)
     
+    except DjangoUser.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
+    except ApiUser.DoesNotExist:
+        return Response({"error": "ApiUser not found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+#########################
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def add_friend_final(request):
+    friend_id = request.data.get('friend_id')
+    
+    # Verificar si se proporciona el ID del amigo
+    if not friend_id:
+        return Response({"error": "Friend ID is required"}, status=400)
+
+    try:
+        # Buscar el amigo por su ID en DjangoUser
+        friend = DjangoUser.objects.get(id=friend_id)
+        # Buscar el usuario que realiza la solicitud
+        api_user = ApiUser.objects.get(user=request.user)
+        # Buscar el usuario amigo en ApiUser
+        friend_api_user = ApiUser.objects.get(user=friend)
+
+        # Agregar el amigo a la lista del usuario que realiza la solicitud
+        if not api_user.friends:
+            api_user.friends = str(friend_id)
+        else:
+            friends_list = api_user.friends.split(',')
+            if str(friend_id) not in friends_list:
+                friends_list.append(str(friend_id))
+                api_user.friends = ','.join(friends_list)
+            else:
+                return Response({"message": "User is already a friend"}, status=200)
+
+        # Agregar el usuario que hizo la solicitud a la lista de amigos del amigo
+        if not friend_api_user.friends:
+            friend_api_user.friends = str(api_user.user.id)
+        else:
+            friend_friends_list = friend_api_user.friends.split(',')
+            if str(api_user.user.id) not in friend_friends_list:
+                friend_friends_list.append(str(api_user.user.id))
+                friend_api_user.friends = ','.join(friend_friends_list)
+            else:
+                return Response({"message": "You are already in their friend list"}, status=200)
+        
+        # Guardar los cambios para ambos usuarios
+        api_user.save()
+        friend_api_user.save()
+
+        return Response({"message": "Friend added successfully"}, status=201)
+
     except DjangoUser.DoesNotExist:
         return Response({"error": "User not found"}, status=404)
     except ApiUser.DoesNotExist:
