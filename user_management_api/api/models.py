@@ -35,6 +35,7 @@ class ApiUser(models.Model):
         on_delete=models.CASCADE,
         primary_key=True,
     )
+    display_name = models.CharField(max_length=150, unique=True, null=True)
     avatar_image = models.ImageField(upload_to='avatars/', null=True, blank=True, default='avatars/default.jpg')
     friends = models.CharField(max_length=200, blank=True, null=True)
     friends_wait = models.CharField(max_length=200, blank=True, null=True) 
@@ -64,6 +65,7 @@ class ApiUser(models.Model):
             'two_factor_enabled': self.two_factor_enabled,
             'two_factor_configured': self.two_factor_configured,
             'avatar_image': self.avatar_image.url if self.avatar_image else None,
+            'display_name': self.display_name,
         }
 
     def __str__(self):
