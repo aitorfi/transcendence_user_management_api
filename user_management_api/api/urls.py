@@ -52,7 +52,7 @@ urlpatterns = [
     path('friends/add_final/', friends_views.add_friend_final, name='add_friend_final'),
     path('friends/add_friends_wait/', friends_views.add_friends_wait, name='add_friends_wait'),
     path('friends/add_friends_request/', friends_views.add_friends_request, name='add_friends_request'),
-
+    path('friends/remove-request/<int:friend_id>/', friends_views.remove_request, name='remove_request'),
 
 
 
