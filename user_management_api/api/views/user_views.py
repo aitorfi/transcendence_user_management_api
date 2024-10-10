@@ -152,7 +152,6 @@ def change_password(request):
 
 @api_view(['PUT'])
 @authentication_classes([JWTAuthentication])
-
 @permission_classes([IsAuthenticated])
 def update_user_profile(request):
     try:
@@ -161,17 +160,26 @@ def update_user_profile(request):
     except (DjangoUser.DoesNotExist, ApiUser.DoesNotExist):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    logger.error(f"Received login request for display_name: {request.data.get('display_name')}")
     # Actualizar los campos del usuario Django
     django_user.first_name = request.data.get('first_name', django_user.first_name)
     django_user.last_name = request.data.get('last_name', django_user.last_name)
     django_user.save()
 
+
     # Actualizar los campos del ApiUser
     api_user.friends = request.data.get('friends', api_user.friends)
+    new_display_name = request.data.get('display_name')
+    if new_display_name:
+        # Verificar si el nuevo display_name ya está en uso
+        if ApiUser.objects.filter(display_name=new_display_name).exclude(user=django_user).exists():
+            return Response({"error": "Este nombre de visualización ya está en uso."}, status=status.HTTP_400_BAD_REQUEST)
+        api_user.display_name = new_display_name
     api_user.save()
 
     # Devolver los datos actualizados
-    return Response(api_user.get_full_user_data(), status=status.HTTP_200_OK)
+    updated_data = api_user.get_full_user_data()
+    return Response(updated_data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

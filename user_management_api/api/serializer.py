@@ -18,6 +18,7 @@ class ApiUserSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+    display_name = serializers.CharField(allow_blank=True, required=False)
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     friends = serializers.CharField(allow_blank=True, required=False)
@@ -30,7 +31,7 @@ class ApiUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApiUser
         fields = [
-            'username', 'email', 'password', 'first_name', 'last_name',
+            'username', 'email', 'password', 'display_name', 'first_name', 'last_name',
             'friends', 'friends_wait', 'friends_request', 'friends_blocked',
             'user_42', 'oauth_id'
         ]
@@ -41,12 +42,13 @@ class ApiUserSerializer(serializers.ModelSerializer):
             'email': validated_data['email'],
             'first_name': validated_data['first_name'],
             'last_name': validated_data['last_name'],
+            
         }
         password = validated_data['password']
-        
         django_user = DjangoUser.objects.create_user(**user_data, password=password)
         api_user = ApiUser.objects.create(
             user=django_user,
+            display_name = validated_data['username'],
             friends=validated_data.get('friends', ''),
             friends_wait=validated_data.get('friends_wait', ''),
             friends_request=validated_data.get('friends_request', ''),
