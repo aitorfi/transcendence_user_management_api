@@ -47,12 +47,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
-
-
-
-
-
 @api_view(['DELETE'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
@@ -93,10 +87,6 @@ def remove_from_friendswaiting(request, friend_id):
     except Exception as e:
         logger.exception(f"Unexpected error in remove_from_friendswaiting: {str(e)}")
         return Response({"error": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
 
 
 @api_view(['DELETE'])
@@ -355,27 +345,49 @@ def remove_blocked(request, friend_id):
 def remove_friend(request, friend_id):
     logger.debug(f"remove_friend called for user: {request.user.username}, friend_id: {friend_id}")
     try:
+        # Obtener el perfil del usuario autenticado
         api_user = ApiUser.objects.get(user=request.user)
         
         if not api_user.friends:
             return Response({"error": "You have no friends to remove"}, status=400)
         
+        # Convertir la lista de amigos del usuario autenticado a una lista de enteros
         friends_ids = [int(id) for id in api_user.friends.split(',') if id.strip().isdigit()]
         
+        # Verificar si el friend_id está en la lista de amigos
         if friend_id not in friends_ids:
             return Response({"error": "This user is not in your friends list"}, status=400)
         
+        # Eliminar el friend_id de la lista de amigos del usuario autenticado
         friends_ids.remove(friend_id)
         api_user.friends = ','.join(map(str, friends_ids))
         api_user.save()
-        
-        return Response({"message": "Friend removed successfully"})
+
+        # Intentar obtener el perfil del usuario asociado al friend_id
+        try:
+            friend_user = ApiUser.objects.get(user__id=friend_id)
+            
+            # Convertir la lista de amigos del friend_id a una lista de enteros
+            friend_user_friends_ids = [int(id) for id in friend_user.friends.split(',') if id.strip().isdigit()]
+            
+            # Verificar si el usuario autenticado está en la lista de amigos del friend_id
+            if request.user.id in friend_user_friends_ids:
+                # Eliminar el usuario autenticado de la lista de amigos del friend_id
+                friend_user_friends_ids.remove(request.user.id)
+                friend_user.friends = ','.join(map(str, friend_user_friends_ids))
+                friend_user.save()
+            
+        except ApiUser.DoesNotExist:
+            logger.warning(f"User with id {friend_id} not found, skipping removal from their friend list")
+
+        return Response({"message": "Friend removed successfully from both lists"})
     
     except ApiUser.DoesNotExist:
         return Response({"error": "User profile not found"}, status=404)
     except Exception as e:
         logger.exception(f"Unexpected error in remove_friend: {str(e)}")
         return Response({"error": "An unexpected error occurred"}, status=500)
+
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
