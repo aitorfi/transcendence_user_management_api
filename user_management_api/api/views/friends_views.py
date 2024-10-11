@@ -46,6 +46,59 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+
+
+
+
+
+
+@api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def remove_from_friendswaiting(request, friend_id):
+    logger.debug(f"remove_from_friendswaiting called for user: {request.user.username}, friend_id: {friend_id}")
+
+    try:
+        # Aseguramos que friend_id sea un entero válido
+        friend_id = int(friend_id)
+
+        # Obtenemos el ApiUser del "usuario amigo"
+        friend_user = ApiUser.objects.filter(user_id=friend_id).first()
+        if not friend_user:
+            return Response({"error": "Friend not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener el ApiUser del usuario autenticado
+        api_user = ApiUser.objects.filter(user=request.user).first()
+        if not api_user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Verificamos si el usuario que hace la petición está en la lista friends_wait del amigo
+        friends_waiting = friend_user.friends_wait or ""
+        friends_waiting_ids = [int(id) for id in friends_waiting.split(',') if id.strip().isdigit()]
+        logger.debug(f"Friend's current waiting requests: {friends_waiting_ids}")
+
+        if api_user.user.id not in friends_waiting_ids:
+            return Response({"error": "You are not in this user's waiting list"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Eliminar al usuario de la lista friends_waiting
+        friends_waiting_ids.remove(api_user.user.id)
+        friend_user.friends_wait = ','.join(map(str, friends_waiting_ids)) if friends_waiting_ids else ""
+        friend_user.save()
+
+        return Response({"message": "You have been successfully removed from the friend's waiting list"}, status=status.HTTP_200_OK)
+
+    except ValueError:
+        return Response({"error": "Invalid friend_id format"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.exception(f"Unexpected error in remove_from_friendswaiting: {str(e)}")
+        return Response({"error": f"An unexpected error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+
 @api_view(['DELETE'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
