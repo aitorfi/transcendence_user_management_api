@@ -38,6 +38,9 @@ import os  # Operating system interface, for file and path operations
 
 
 
+
+
+
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -45,6 +48,42 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 import logging
 
 logger = logging.getLogger(__name__)
+
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def friends_blocked(request, friend_id):
+    logger.debug(f"add_friend_to_friends_blocked called for user: {request.user.username}, friend_id: {friend_id}")
+    try:
+        # Obtener el ApiUser correspondiente al usuario autenticado
+        api_user = ApiUser.objects.get(user=request.user)
+
+        # Si no existe la lista de friends_blocked, crearla
+        if not api_user.friends_blocked:
+            friends_blocked_ids = []
+        else:
+            # Convertir la lista de friends_blocked en una lista de enteros
+            friends_blocked_ids = [int(id) for id in api_user.friends_blocked.split(',') if id.strip().isdigit()]
+
+        # Si el friend_id ya está en la lista de friends_blocked, devolver un error
+        if friend_id in friends_blocked_ids:
+            return Response({"error": "This user is already in your blocked list"}, status=400)
+
+        # Agregar el nuevo friend_id a la lista
+        friends_blocked_ids.append(friend_id)
+
+        # Actualizar el campo friends_blocked en el modelo con la nueva lista
+        api_user.friends_blocked = ','.join(map(str, friends_blocked_ids))
+        api_user.save()
+
+        return Response({"message": "Friend successfully blocked"})
+
+    except ApiUser.DoesNotExist:
+        return Response({"error": "User profile not found"}, status=404)
+    except Exception as e:
+        logger.exception(f"Unexpected error in add_friend_to_friends_blocked: {str(e)}")
+        return Response({"error": "An unexpected error occurred"}, status=500)
+  
 
 
 @api_view(['DELETE'])
@@ -533,5 +572,4 @@ def get_user_friends(request):
     except Exception as e:
         logger.exception(f"Unexpected error in get_user_friends: {str(e)}")
         return Response({"error": "An unexpected error occurred"}, status=500)
-
 

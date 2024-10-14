@@ -54,9 +54,7 @@ urlpatterns = [
     path('friends/add_friends_request/', friends_views.add_friends_request, name='add_friends_request'),
     path('friends/remove-request/<int:friend_id>/', friends_views.remove_request, name='remove_request'),
     path('friends/remove-from-waiting/<int:friend_id>/', friends_views.remove_from_friendswaiting, name='remove_from_friendswaiting'),
-
-
-
+    path('friends/friends_blocked/<int:friend_id>/', friends_views.friends_blocked, name='friends_blocked'),
 
 ]
 
