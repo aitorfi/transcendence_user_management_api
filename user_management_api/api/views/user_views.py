@@ -193,6 +193,21 @@ def get_user_profile(request):
         return Response({"error": "User profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    refresh['username'] = user.username
+    try:
+        api_user = ApiUser.objects.get(user=user)
+        refresh['display_name'] = api_user.display_name
+    except ApiUser.DoesNotExist:
+        refresh['display_name'] = "Apiuser Error"
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
 @api_view(['POST'])
 def login_user(request):
     logger.debug(f"Received login request for user: {request.data.get('username')}")
@@ -220,12 +235,13 @@ def login_user(request):
             return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
         logger.info(f"User {username} logged in successfully")
-        refresh = RefreshToken.for_user(user)
+#        refresh = RefreshToken.for_user(user)
+        tokens = get_tokens_for_user(user)
         return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            **tokens,
             'user_id': user.id,
-            'username': user.username
+            'username': user.username,
+            'display_name': api_user.display_name
         })
     
     logger.warning(f"Invalid login attempt for user: {username}")
