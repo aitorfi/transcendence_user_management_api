@@ -27,7 +27,7 @@ import logging  # Logging facility for Python
 logger = logging.getLogger(__name__)
 
 def get_default_avatar(request):
-    default_path = os.path.join(settings.MEDIA_ROOT, 'default.jpg')
+    default_path = os.path.join(settings.MEDIA_ROOT, 'avatars/default.jpg')
     logger.info(f"Attempting to serve default avatar from: {default_path}")
     if os.path.exists(default_path):
         return FileResponse(open(default_path, 'rb'), content_type="image/jpeg")
